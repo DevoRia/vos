@@ -12,17 +12,22 @@ if [ "$ARCH" == "aarch64" ]; then
         -m 512M \
         -bios /opt/homebrew/share/qemu/edk2-aarch64-code.fd \
         -drive format=raw,file=vos_uefi_aarch64.img \
-        -serial stdio \
-        -display none
+        -device virtio-gpu-pci \
+        -device qemu-xhci \
+        -device usb-kbd \
+        -device usb-mouse \
+        -serial stdio
 elif [ "$ARCH" == "x86_64" ]; then
     echo "Running x86_64 UEFI..."
     qemu-system-x86_64 \
         -machine q35 \
         -m 512M \
-        -bios /opt/homebrew/share/qemu/edk2-x86_64-code.fd \
+        -drive if=pflash,format=raw,readonly=on,file=/opt/homebrew/share/qemu/edk2-x86_64-code.fd \
         -drive format=raw,file=vos_uefi_x86_64.img \
-        -serial stdio \
-        -display none
+        -device qemu-xhci \
+        -device usb-kbd \
+        -device usb-mouse \
+        -serial stdio
 else
-    echo "Unknown arch"
+    echo "Unknown arch: $ARCH (use aarch64 or x86_64)"
 fi

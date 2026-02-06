@@ -10,6 +10,9 @@
 extern crate alloc;
 
 pub mod arch;
+pub mod fs;
+pub mod gui;
+pub mod memory;
 pub mod shell;
 
 #[cfg(target_arch = "x86_64")]

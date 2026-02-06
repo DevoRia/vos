@@ -19,7 +19,17 @@ pub extern "C" fn efi_main(handle: Handle, system_table: *mut uefi_raw::table::s
     
     log::info!("UEFI Boot Success (Manual Entry)!");
 
-    vos::shell::run_shell();
+    // Try GUI mode, fallback to text shell
+    match vos::gui::gop::init_gop() {
+        Ok(screen) => {
+            log::info!("GOP initialized: {}x{}", screen.width, screen.height);
+            vos::shell::run_gui_shell(screen);
+        }
+        Err(e) => {
+            log::warn!("GOP unavailable ({}), using text mode", e);
+            vos::shell::run_shell();
+        }
+    }
 }
 
 #[global_allocator]

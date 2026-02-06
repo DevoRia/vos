@@ -28,19 +28,21 @@ if [ ! -f "$EFI_FILE" ]; then
 fi
 
 IMG_NAME="vos_uefi_${ARCH}.img"
+DMG_TEMP="${IMG_NAME%.img}.dmg"
 
 echo "Creating disk image: $IMG_NAME"
-dd if=/dev/zero of=$IMG_NAME bs=1m count=64
 
-# Attach disk image
-DEV=$(hdiutil attach -nomount $IMG_NAME | head -n 1 | awk '{print $1}')
-echo "Attached to $DEV"
+# Remove old images
+rm -f "$IMG_NAME" "$DMG_TEMP"
 
-# Format as FAT32
-echo "Formatting..."
-diskutil eraseVolume "MS-DOS FAT32" VOS_EFI $DEV
+# Create a FAT32-formatted DMG, then convert to raw
+hdiutil create -size 64m -fs "MS-DOS FAT32" -volname VOS_EFI -layout NONE "$DMG_TEMP"
 
-# Create directory structure
+# Mount it
+DEV=$(hdiutil attach "$DMG_TEMP" | grep "/Volumes/VOS_EFI" | awk '{print $1}')
+echo "Attached to $DEV, mounted at /Volumes/VOS_EFI"
+
+# Create directory structure and copy EFI binary
 echo "Copying files..."
 mkdir -p /Volumes/VOS_EFI/EFI/BOOT
 cp "$EFI_FILE" "/Volumes/VOS_EFI/EFI/BOOT/$DEST_NAME"
@@ -48,6 +50,11 @@ cp "$EFI_FILE" "/Volumes/VOS_EFI/EFI/BOOT/$DEST_NAME"
 # Sync and Detach
 echo "Detaching..."
 sync
-hdiutil detach $DEV
+hdiutil detach "$DEV"
+
+# Convert DMG to raw image
+hdiutil convert "$DMG_TEMP" -format UDTO -o "${IMG_NAME%.img}"
+mv "${IMG_NAME%.img}.cdr" "$IMG_NAME"
+rm -f "$DMG_TEMP"
 
 echo "Done! Image created at $IMG_NAME"
